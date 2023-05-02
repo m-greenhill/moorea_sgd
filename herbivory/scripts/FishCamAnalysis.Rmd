@@ -1,0 +1,1195 @@
+---
+title: 'SGD Herbivory Video Analysis '
+author: "Maya Zeff"
+date: '2023-03-31'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+require("knitr")
+opts_knit$set(root.dir = "/Users/maya/Documents/R_sessions/silbiger_lab/moorea_sgd/herbivory/data")
+opts_chunk$set(echo=FALSE,
+               warning=FALSE,
+               message=FALSE,
+               error=FALSE,
+               results='hide')
+```
+
+```{r load.libraries}
+library(tidyverse)
+library(vegan)
+library(ggplot2)
+library(ggpubr)
+library(fishualize)
+library(forcats)
+```
+
+```{r read.datafiles}
+# read in functional group data
+functional.group <- read.csv("species_functional.csv") 
+
+# read in herbivory cam data
+all.cam <- read_csv("cam_surveys_prelim.csv") %>%
+  # add name descriptions
+  mutate(SGD = str_replace(SGD, "high", "High"),
+         SGD = str_replace(SGD, "low", "Low"),
+         tide = str_replace(tide, "high", "High Tide"),
+         tide = str_replace(tide, "low", "Low Tide")) %>%
+  # treat treatments as factors
+  mutate(SGD = as.factor(SGD),
+         Tide = as.factor(tide),
+         Site = as.factor(site),
+         Habitat = as.factor(habitat)) %>%
+  # change substrate types to broader groupings
+  mutate(substrate = str_replace(substrate, "turbinaria", "Macroalgae"),
+         substrate = str_replace(substrate, "coral", "Coral"),
+         substrate = str_replace(substrate, "turf", "MPbenthos"),
+         substrate = str_replace(substrate, "plankton", "Plankton")) %>%
+  # merge functional groups by species codes
+  left_join(functional.group, by = 'code') 
+#%>%filter(rep == "1")
+```
+
+## SGD drives changes in fish community structure and function  
+
+![](/Users/maya/Documents/R_sessions/silbiger_lab/moorea_sgd/herbivory/images/ExperimentalDesign.png)    
+
+
+### Who is there - Community Composition
+
+```{r species.community.matrices}
+# species composition matrix
+    abundance.species <- all.cam %>%
+      mutate(habitat = as.factor(habitat))%>%
+      # choose only presence observations
+      filter(activity == "nat") %>%
+      # group down to individual videos
+      group_by(habitat, SGD, location_group, tide_group, tide, site, rep, common) %>%
+      summarise(abundance = n()) %>%
+      na.omit() %>%
+      spread(key = common, value = abundance, fill = 0) %>%
+      ungroup()
+    
+    # turn data frame into NMDS matrix
+    abundance.species.matrix <- abundance.species %>%
+      dplyr::select(8:last_col()) %>%
+      as.matrix()
+    
+    # descriptive variable data frame
+    abund.env <- abundance.species %>%
+      dplyr::select(1:7) 
+
+
+```
+
+```{r family.community.matrices}
+# species composition matrix
+    abundance.family <- all.cam %>%
+      mutate(habitat = as.factor(habitat))%>%
+      # choose only presence observations
+      filter(activity == "nat") %>%
+      # group down to individual videos
+      group_by(habitat, SGD, location_group, tide_group, tide, site, rep, family) %>%
+      summarise(abundance = n()) %>%
+      na.omit() %>%
+      spread(key = family, value = abundance, fill = 0) %>%
+      ungroup()
+    
+    # turn data frame into NMDS matrix
+    abundance.family.matrix <- abundance.family %>%
+      dplyr::select(8:last_col()) %>%
+      as.matrix()
+    
+    # descriptive variable data frame
+    fam.abund.env <- abundance.family %>%
+      dplyr::select(1:7) 
+
+```
+
+```{r consumer.community.matrices}
+# consumer composition matrix
+    abundance.function <- all.cam %>%
+      mutate(habitat = as.factor(habitat))%>%
+      # choose only presence observations
+      filter(activity == "nat") %>%
+      # group down to individual videos
+      group_by(habitat, SGD, location_group, tide_group, tide, site, rep, functional) %>%
+      summarise(abundance = n()) %>%
+      na.omit() %>%
+      spread(key = functional, value = abundance, fill = 0) %>%
+      ungroup()
+    
+    # turn data frame into NMDS matrix
+    abundance.function.matrix <- abundance.function %>%
+      dplyr::select(8:last_col()) %>%
+      as.matrix()
+    
+    # descriptive variable data frame
+    func.abund.env <- abundance.function %>%
+      dplyr::select(1:7) 
+
+```
+
+```{r reef.matrices}
+#---Species composition matrix--------------------
+   reef.species <- all.cam %>%
+      # choose only presence observations
+      filter(activity == "nat") %>%
+      filter(habitat == "reef") %>%
+     # filter(SGD == "High") %>%
+      # group down to individual videos
+      group_by(SGD, location_group, tide_group, tide, site, rep, common) %>%
+      summarise(abundance = n()) %>%
+      na.omit() %>%
+      spread(key = common, value = abundance, fill = 0) %>%
+      ungroup()
+    
+    # turn data frame into NMDS matrix
+    reef.species.matrix <- reef.species %>%
+      dplyr::select(8:last_col()) %>%
+      as.matrix()
+    
+    # descriptive variable data frame
+    reef.env <- reef.species %>%
+      dplyr::select(1:7) 
+
+    
+#---Family composition matrix--------------------
+    fam.reef.species <- all.cam %>%
+      # choose only presence observations
+      filter(activity == "nat") %>%
+      filter(habitat == "reef") %>%
+     # filter(SGD == "High") %>%
+      # group down to individual videos
+      group_by(SGD, location_group, tide_group, tide, site, rep, family) %>%
+      summarise(abundance = n()) %>%
+      na.omit() %>%
+      spread(key = family, value = abundance, fill = 0) %>%
+      ungroup()
+    
+    # turn data frame into NMDS matrix
+    fam.reef.species.matrix <- fam.reef.species %>%
+      dplyr::select(8:last_col()) %>%
+      as.matrix()
+    
+    # descriptive variable data frame
+    fam.reef.env <- fam.reef.species %>%
+      dplyr::select(1:7) 
+
+```
+
+```{r sand.matrices}
+#---Species composition matrix--------------------
+   sand.species <- all.cam %>%
+      # choose only presence observations
+      filter(activity == "nat") %>%
+      filter(habitat == "sand") %>%
+     # filter(SGD=="High") %>%
+      # group down to individual videos
+      group_by(SGD, location_group, tide_group, tide, site, rep, common) %>%
+      summarise(abundance = n()) %>%
+      na.omit() %>%
+      spread(key = common, value = abundance, fill = 0) %>%
+      ungroup()
+    
+    # turn data frame into NMDS matrix
+    sand.species.matrix <- sand.species %>%
+      dplyr::select(8:last_col()) %>%
+      as.matrix()
+    
+    # descriptive variable data frame
+    sand.env <- sand.species %>%
+      dplyr::select(1:7) 
+
+#---Family composition matrix--------------------
+
+   fam.sand.species <- all.cam %>%
+      # choose only presence observations
+      filter(activity == "nat") %>%
+      filter(habitat == "sand") %>%
+     # filter(SGD=="High") %>%
+      # group down to individual videos
+      group_by(SGD, location_group, tide_group, tide, site, rep, family) %>%
+      summarise(abundance = n()) %>%
+      na.omit() %>%
+      spread(key = family, value = abundance, fill = 0) %>%
+      ungroup()
+    
+    # turn data frame into NMDS matrix
+    fam.sand.species.matrix <- sand.species %>%
+      dplyr::select(8:last_col()) %>%
+      as.matrix()
+    
+    # descriptive variable data frame
+    fam.sand.env <- sand.species %>%
+      dplyr::select(1:7) 
+
+```
+
+```{r species.presence.absence.nmds}
+# transform community data into presence absence
+abund.pa <- decostand(abundance.species.matrix, method = "pa")
+
+# conduct NMDS
+abund.nmds <- metaMDS(abund.pa, autotransform = F)
+abund.nmds$stress
+
+# extract NMDS scores (x and y coordinates)
+sites <- as.data.frame(scores(abund.nmds)$sites)
+species <- as.data.frame(scores(abund.nmds)$species) 
+names <- cbind(rownames(species), data.frame(species, row.names=NULL)) %>%
+          mutate(common = rownames(species)) 
+          
+
+# add columns to data frame 
+sites$habitat = abund.env$habitat
+sites$SGD = abund.env$SGD
+sites$tide = abund.env$tide
+sites$site = abund.env$site
+sites$group = abund.env$group
+
+
+# plot NMDS points alone
+abund.plot <- ggplot() + 
+  geom_point(data = sites,
+             mapping = aes(x=NMDS1, 
+                           y = NMDS2, 
+                           shape = factor(SGD),
+                           colour = factor(habitat), 
+                           fill = factor(tide),
+                           stroke = 1.5,)) + 
+  scale_shape_manual(values = c(21, 24)) + 
+  scale_fill_manual(values = c("black", 
+                               "white")) +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  facet_wrap(~habitat) +
+  theme_bw() +
+  labs(x = "NMDS1", 
+       colour = "Site", 
+       y = "NMDS2", 
+       shape = "SGD",
+       fill = "Tide",
+       title = "Fish Species Presence-Absence, Sand & Reef") 
+
+
+# plot species vectors ---------------------------------------------
+
+#simper
+sim <- with(abund.env, simper(abund.pa, habitat))
+
+cu.sim <- as.tibble(sim$reef_sand$cusum) %>% 
+  mutate(cusum = value)
+
+species.sim <- as.tibble(sim$reef_sand$species) %>%
+  mutate(species = value)
+
+summary.significance <- tibble(common = species.sim$species, cusum = cu.sim$cusum) %>%
+  mutate(cusum = as.numeric(cusum)) %>%
+  filter(cusum >= .9) %>%
+  left_join(names)
+
+vecto.plot <- abund.plot + geom_segment(data = summary.significance,
+               mapping = aes(x = 0,
+                             y = 0,
+                             xend = NMDS1,
+                             yend = NMDS2),
+               arrow = arrow(length = unit(.015, "npc"),
+                             type = "closed"),
+               color = "darkgray",
+               size = .8) +
+  geom_text(data = summary.significance,
+            mapping = aes(label = code, 
+                          x = NMDS1*1.1,
+                          y = NMDS2*1.1),
+           position= position_jitter(width=.1,
+                                     height=.2),
+            size = 2) 
+
+
+
+# habitat ellipse plot-------------------------------------------------------------
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+
+habitat.ell <- data.frame() #sets up a data frame before running the function.
+for(g in levels(sites$habitat)){
+ habitat.ell <- rbind(habitat.ell, 
+                     cbind(as.data.frame(with(sites[sites$habitat==g,],
+                                              veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,habitat=g))
+}
+
+
+habitat.ell.plot <- ggplot() + 
+  geom_point(data = sites,
+             mapping = aes(x=NMDS1, 
+                           y = NMDS2, 
+                           shape = factor(SGD),
+                           colour = factor(group), 
+                           fill = factor(tide),
+                           stroke = 1.5,)) + 
+  scale_shape_manual(values = c(21, 24)) + 
+  scale_fill_manual(values = c("black", 
+                               "white")) +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  theme_bw() +
+  labs(x = "NMDS1", 
+       colour = "Site", 
+       y = "NMDS2", 
+       shape = "SGD",
+       fill = "Tide",
+       title = "Fish Species Presence-Absence, Sand & Reef") +
+  geom_path(data = habitat.ell, 
+            aes(x = NMDS1, 
+                y = NMDS2, 
+                group = habitat))
+
+```
+
+```{r stats.presence.absence} 
+
+#reef & sand together
+ano.sgd.both = anosim(abund.pa, abund.env$SGD, distance = "bray", permutations = 9999)
+ano.sgd.both
+
+ano.tide.both = anosim(abund.pa, abund.env$tide, distance = "bray", permutations = 9999)
+ano.tide.both 
+
+ano.habitat = anosim(abund.pa, abund.env$habitat, distance = "bray", permutations = 9999)
+ano.habitat 
+
+
+```
+
+NMDS plot of reef fish species abundance community composition (n = 3 / tide / SGD influence / habitat type; stress = .15). 
+Data underwent Hellinger transformation - good for species abundance data, gives low weights to variables with many zeros.         
+
+
+##### Reef & sand habitats have different communities of fish species 
+There is a significant difference between fish assemblages in sand habitats and reef habitats (ANOSIM, R = .7025,p =.0001)  
+  
+  
+##### Communities in sand habitats are more variable than in reef habitats
+Communities in sand habitats are significantly more variable than those in reef habitats (ANOVA / betadisp; F = 17.71, p = .0003)  
+  
+  
+#### Variability is driven by groundwater influence, which creates different fish communities in sand habitats but not in reef habitats
+In sand habitats, there are significant difference in fish assemblages between high and low groundwater influence (ANOSIM, R = .4204, p = .0038).  
+  
+  
+## Species Community Plots
+
+```{r species.abundance.nmds}
+# transform community data into presence absence
+abund.hel <- decostand(abundance.species.matrix, method = "hellinger")
+
+# conduct NMDS
+abund.nmds <- metaMDS(abund.hel, autotransform = F)
+abund.nmds$stress
+
+# extract NMDS scores (x and y coordinates)
+sites <- as.data.frame(scores(abund.nmds)$sites)
+species <- as.data.frame(scores(abund.nmds)$species) 
+names <- cbind(rownames(species), data.frame(species, row.names=NULL)) %>%
+          mutate(common = rownames(species)) 
+          
+
+# add columns to data frame 
+sites$habitat = abund.env$habitat
+sites$SGD = abund.env$SGD
+sites$tide = abund.env$tide
+sites$site = abund.env$site
+sites$location_group = abund.env$location_group
+sites$tide_group = abund.env$tide_group
+
+
+# plot NMDS points alone
+abund.plot <- ggplot() + 
+  geom_point(data = sites,
+             mapping = aes(x=NMDS1, 
+                           y = NMDS2, 
+                           shape = factor(SGD),
+                           colour = factor(location_group), 
+                           fill = factor(tide),
+                           stroke = 1.5,)) + 
+  scale_shape_manual(values = c(21, 24)) + 
+  scale_fill_manual(values = c("black", 
+                               "white")) +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  facet_wrap(~habitat) +
+  theme_bw() +
+  labs(x = "NMDS1", 
+       colour = "Site", 
+       y = "NMDS2", 
+       shape = "SGD",
+       fill = "Tide",
+       title = "NMDS of reef fish species assemblages") 
+
+abund.plot
+
+# plot species vectors-----------------------------
+
+#simper
+sim <- with(abund.env, simper(abund.hel, habitat))
+
+summary.significance <- as.tibble(sim$reef_sand) %>%
+              mutate(common = species) %>%
+              dplyr::select(common, average) %>%
+              arrange(desc(average)) %>%
+              top_n(10) %>%
+              left_join(names)
+
+vecto.plot <- abund.plot + geom_segment(data = summary.significance,
+               mapping = aes(x = 0,
+                             y = 0,
+                             xend = NMDS1,
+                             yend = NMDS2),
+               arrow = arrow(length = unit(.015, "npc"),
+                             type = "closed"),
+               color = "darkgray",
+               size = .8,
+               alpha = .75) +
+  geom_text(data = summary.significance,
+            mapping = aes(label = common, 
+                          x = NMDS1*1.1,
+                          y = NMDS2*1.1),
+           position= position_jitter(width=.1,
+                                     height=.3),
+            size = 2) +
+  ggtitle("Top 10 species contributing to community differences")
+
+vecto.plot
+
+
+# habitat ellipse plot-------------------------------------------------------------
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+
+habitat.ell <- data.frame() #sets up a data frame before running the function.
+for(g in levels(sites$habitat)){
+ habitat.ell <- rbind(habitat.ell, 
+                     cbind(as.data.frame(with(sites[sites$habitat==g,],
+                                              veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,habitat=g))
+}
+
+
+habitat.ell.plot <- ggplot() + 
+  geom_point(data = sites,
+             mapping = aes(x=NMDS1, 
+                           y = NMDS2, 
+                           shape = factor(SGD),
+                           colour = factor(habitat), 
+                           fill = factor(tide),
+                           stroke = 1.5,)) + 
+  scale_shape_manual(values = c(21, 24)) + 
+  scale_fill_manual(values = c("black", 
+                               "white")) +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  theme_bw() +
+  labs(x = "NMDS1", 
+       colour = "Site", 
+       y = "NMDS2", 
+       shape = "SGD",
+       fill = "Tide",
+       title = "Fish Community Abundance") +
+  geom_path(data = habitat.ell, 
+            aes(x = NMDS1, 
+                y = NMDS2, 
+                group = habitat)) +
+  ggtitle("Who knew? Reef & sand habitats have different species of fishies")
+  
+
+habitat.ell.plot
+
+```
+
+```{r stats.species.abundance}
+
+#reef & sand together
+ano.sgd.both = anosim(abund.hel, abund.env$SGD, distance = "bray", permutations = 9999)
+ano.tide.both = anosim(abund.hel, abund.env$tide, distance = "bray", permutations = 9999)
+ano.habitat = anosim(abund.hel, abund.env$habitat, distance = "bray", permutations = 9999)
+
+#significant:
+ano.habitat 
+
+# reef
+
+reef.hel <- decostand(reef.species.matrix, method = "hellinger")
+ano.sgd.reef = anosim(reef.hel, reef.env$SGD, distance = "bray", permutations = 9999)
+ano.tide.reef = anosim(reef.hel, reef.env$tide, distance = "bray", permutations = 9999)
+
+sand.hel <- decostand(sand.species.matrix, method = "hellinger")
+ano.sgd.sand= anosim(sand.hel, sand.env$SGD, distance = "bray", permutations = 9999)
+ano.tide.sand = anosim(sand.hel, sand.env$tide, distance = "bray", permutations = 9999)
+
+
+# betadispersion 
+# habitat
+dis <- vegdist(abund.hel)
+group <- sites$habitat
+bd <- betadisper(dis, group)
+anova(bd)
+```
+
+```{r species.sgd.ellipse}
+#---SGD ellipse plot--------------------
+
+reef.SGD.ell <- data.frame() #sets up a data frame before running the function.
+sand.SGD.ell <- data.frame()
+
+
+reefell <- sites %>% filter(habitat=="reef")
+sandell <- sites %>% filter(habitat=="sand")
+
+for(g in levels(reefell$SGD)){
+ reef.SGD.ell <- rbind(reef.SGD.ell, 
+                     cbind(as.data.frame(with(reefell[reefell$SGD==g,],
+                                              veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,SGD=g))
+}
+
+for(g in levels(sandell$SGD)){
+ sand.SGD.ell <- rbind(sand.SGD.ell, 
+                     cbind(as.data.frame(with(sandell[sandell$SGD==g,],
+                                              veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,SGD=g))
+}
+
+
+ell.plot <- ggplot() + 
+  geom_point(data = sites,
+             mapping = aes(x=NMDS1, 
+                           y = NMDS2, 
+                           shape = factor(SGD),
+                           colour = factor(location_group), 
+                           fill = factor(tide),
+                           stroke = 1.5,)) + 
+  scale_shape_manual(values = c(21, 24)) + 
+  scale_fill_manual(values = c("black", 
+                               "white")) +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  theme_bw() +
+  labs(x = "NMDS1", 
+       colour = "Site", 
+       y = "NMDS2", 
+       shape = "SGD",
+       fill = "Tide" ) +
+  geom_path(data = reef.SGD.ell, 
+            aes(x = NMDS1, 
+                y = NMDS2, 
+                group = SGD)) +
+  geom_path(data = sand.SGD.ell,
+            aes(x=NMDS1,
+                y=NMDS2,
+                group=SGD)) +
+  ggtitle("Groundwater influence drives variability in sand communities")
+                
+  
+ell.plot
+```
+
+#### Questions
+ANOSIM tests whether two or more groups of samples are significantly different.  
+Do significant differences between habitat types mean they can be analyzed separately can only specify one grouping (I think) & cannot do interactive effects, how to look at interaction between SGD & tide?  
+How to track changes between high and low tide at one site? calculate distance between points and then group distances? 
+
+
+## Taxonomic family groupings
+
+##### Reef & sand habitats have different communities of fish families 
+A significant difference between fish families in sand habitats and reef habitats (ANOSIM, R: .5667, p=.002)  
+Kuhliidae are a family of flagtails: most are euryhaline and often found in brackish water, but the genus also includes species restricted to marine or fresh water.  
+  
+#### Across all habitat types, groundwater influence drives difference in communities of fish families 
+A significant difference between fish families in high groundwater vs low groundwater (ANOSIM, R: .1375, p=.0067 )
+Not the case for species differences, only families.  
+  
+#### Families in sand habitatsare more variable than in reef habitats
+Communities in sand habitats are significantly more variable than those in reef habitats (ANOVA / betadisp; F = 49.91, p < .00001)  
+  
+  
+#### Variability is driven by groundwater influence, which creates different fish communities in sand habitats but not in reef habitats
+In sand habitats, there are significant difference in fish assemblages between high and low groundwater influence (ANOSIM, R: .5667, p=.0019)
+
+```{r family.abundance.nmds}
+
+# transform community data into presence absence
+fam.abund.hel <- decostand(abundance.family.matrix, method = "hellinger")
+
+# conduct NMDS
+fam.abund.nmds <- metaMDS(fam.abund.hel, autotransform = F)
+fam.abund.nmds$stress
+
+# extract NMDS scores (x and y coordinates)
+fam.sites <- as.data.frame(scores(fam.abund.nmds)$sites)
+fam.species <- as.data.frame(scores(fam.abund.nmds)$species) 
+fam.names <- cbind(rownames(fam.species), data.frame(fam.species, row.names=NULL)) %>%
+          mutate(common = rownames(fam.species)) 
+          
+
+# add columns to data frame 
+fam.sites$habitat = fam.abund.env$habitat
+fam.sites$SGD = fam.abund.env$SGD
+fam.sites$tide = fam.abund.env$tide
+fam.sites$site = fam.abund.env$site
+fam.sites$location_group = fam.abund.env$location_group
+fam.sites$tide_group = fam.abund.env$tide_group
+
+
+# plot NMDS points alone
+fam.abund.plot <- ggplot() + 
+  geom_point(data = fam.sites,
+             mapping = aes(x=NMDS1, 
+                           y = NMDS2, 
+                           shape = factor(SGD),
+                           colour = factor(location_group), 
+                           fill = factor(tide),
+                           stroke = 1.5,)) + 
+  scale_shape_manual(values = c(21, 24)) + 
+  scale_fill_manual(values = c("black", 
+                               "white")) +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  facet_wrap(~habitat) +
+  theme_bw() +
+  labs(x = "NMDS1", 
+       colour = "Site", 
+       y = "NMDS2", 
+       shape = "SGD",
+       fill = "Tide",
+       title = "NMDS of fish communities by taxonomic family") 
+
+fam.abund.plot
+
+# plot species vectors-----------------------------
+
+#simper habitat
+fam.sim <- with(fam.abund.env, simper(fam.abund.hel, habitat))
+
+fam.summary.significance <- as.tibble(fam.sim$reef_sand) %>%
+              mutate(common = species) %>%
+              dplyr::select(common, average) %>%
+              arrange(desc(average)) %>%
+              top_n(9) %>%
+              left_join(fam.names)
+
+
+fam.habitat.vecto.plot <- fam.abund.plot + geom_segment(data = fam.summary.significance,
+               mapping = aes(x = 0,
+                             y = 0,
+                             xend = NMDS1,
+                             yend = NMDS2),
+               arrow = arrow(length = unit(.015, "npc"),
+                             type = "closed"),
+               color = "darkgray",
+               size = .8,
+               alpha = .75) +
+  geom_text(data = fam.summary.significance,
+            mapping = aes(label = common, 
+                          x = NMDS1*1.1,
+                          y = NMDS2*1.1),
+           position= position_jitter(width=.1,
+                                     height=.2),
+            size = 2) +
+  ggtitle("Top 10 family groups contributing to differences between habitats")
+
+fam.habitat.vecto.plot
+
+
+
+
+# habitat ellipse plot-------------------------------------------------------------
+fam.habitat.ell <- data.frame() #sets up a data frame before running the function.
+
+for(g in levels(fam.sites$habitat)){
+ fam.habitat.ell <- rbind(fam.habitat.ell, 
+                     cbind(as.data.frame(with(fam.sites[fam.sites$habitat==g,],
+                                              veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,habitat=g))
+}
+
+fam.habitat.ell.plot <- ggplot() + 
+  geom_point(data = fam.sites,
+             mapping = aes(x=NMDS1, 
+                           y = NMDS2, 
+                           shape = factor(SGD),
+                           colour = factor(habitat), 
+                           fill = factor(tide),
+                           stroke = 1.5,)) + 
+  scale_shape_manual(values = c(21, 24)) + 
+  scale_fill_manual(values = c("black", 
+                               "white")) +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  theme_bw() +
+  labs(x = "NMDS1", 
+       colour = "Site", 
+       y = "NMDS2", 
+       shape = "SGD",
+       fill = "Tide",
+       title = "Family groupings differ between sand and reef habitats ") +
+  geom_path(data = fam.habitat.ell, 
+            aes(x = NMDS1, 
+                y = NMDS2, 
+                group = habitat))
+
+fam.habitat.ell.plot
+
+
+#simper SGD
+fam.sim.sgd <- with(fam.abund.env, simper(fam.abund.hel, SGD))
+
+fam.summary.significance.sgd <- as.tibble(fam.sim.sgd$High_Low) %>%
+              mutate(common = species) %>%
+              dplyr::select(common, average) %>%
+              arrange(desc(average)) %>%
+              top_n(9) %>%
+              left_join(fam.names)
+
+
+fam.habitat.vecto.plot.sgd <- ggplot() + 
+  geom_point(data = fam.sites,
+             mapping = aes(x=NMDS1, 
+                           y = NMDS2, 
+                           shape = factor(SGD),
+                           colour = factor(SGD), 
+                           fill = factor(tide),
+                           stroke = 1.5,)) + 
+  scale_shape_manual(values = c(21, 24)) + 
+  scale_fill_manual(values = c("black", 
+                               "white")) +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  facet_wrap(~habitat) +
+  theme_bw() +
+  labs(x = "NMDS1", 
+       colour = "Site", 
+       y = "NMDS2", 
+       shape = "SGD",
+       fill = "Tide") +
+    geom_segment(data = fam.summary.significance.sgd,
+               mapping = aes(x = 0,
+                             y = 0,
+                             xend = NMDS1,
+                             yend = NMDS2),
+               arrow = arrow(length = unit(.015, "npc"),
+                             type = "closed"),
+               color = "darkgray",
+               size = .8,
+               alpha = .75) +
+  geom_text(data = fam.summary.significance,
+            mapping = aes(label = common, 
+                          x = NMDS1*1.1,
+                          y = NMDS2*1.1),
+           position= position_jitter(width=.1,
+                                     height=.2),
+            size = 2) +
+  ggtitle("Top 10 family groups contributing to differences between SGD influence")
+
+fam.habitat.vecto.plot.sgd
+
+# sgd ellipse plot
+fam.sgd.ell <- data.frame() #sets up a data frame before running the function.
+
+
+for(g in levels(fam.sites$SGD)){
+ fam.sgd.ell <- rbind(fam.sgd.ell, 
+                     cbind(as.data.frame(with(fam.sites[fam.sites$SGD==g,],
+                                              veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,SGD=g))
+}
+
+
+fam.sgd.ell.plot <- ggplot() + 
+  geom_point(data = fam.sites,
+             mapping = aes(x=NMDS1, 
+                           y = NMDS2, 
+                           shape = factor(SGD),
+                           colour = factor(SGD), 
+                           fill = factor(tide),
+                           stroke = 1.5,)) + 
+  scale_shape_manual(values = c(21, 24)) + 
+  scale_fill_manual(values = c("black", 
+                               "white")) +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  theme_bw() +
+  labs(x = "NMDS1", 
+       colour = "Site", 
+       y = "NMDS2", 
+       shape = "SGD",
+       fill = "Tide") +
+  geom_path(data = fam.sgd.ell, 
+            aes(x = NMDS1, 
+                y = NMDS2, 
+                group = SGD)) +
+  ggtitle("Across both habitats, SGD drives differences in taxonomic family")
+
+fam.sgd.ell.plot
+```
+
+```{r stats.family.abundance}
+
+#---reef & sand together   --------------------
+fam.sgd.both = anosim(fam.abund.hel, fam.abund.env$SGD, distance = "bray", permutations = 9999)
+fam.tide.both = anosim(fam.abund.hel, fam.abund.env$tide, distance = "bray", permutations = 9999)
+fam.habitat = anosim(fam.abund.hel, fam.abund.env$habitat, distance = "bray", permutations = 9999)
+fam.habitat = anosim(fam.abund.hel, fam.abund.env$location_group, distance = "bray", permutations = 9999)
+
+#significant:
+fam.sgd.both
+fam.habitat
+
+#---reef only   -------------------
+
+fam.reef.hel <- decostand(fam.reef.species.matrix, method = "hellinger")
+fam.sgd.reef = anosim(fam.reef.hel, fam.reef.env$SGD, distance = "bray", permutations = 9999)
+fam.tide.reef = anosim(fam.reef.hel, fam.reef.env$tide, distance = "bray", permutations = 9999)
+
+#--- sand only   -------------------
+fam.sand.hel <- decostand(fam.sand.species.matrix, method = "hellinger")
+fam.ano.sgd.sand= anosim(fam.sand.hel, fam.sand.env$SGD, distance = "bray", permutations = 9999)
+fam.ano.tide.sand = anosim(fam.sand.hel, fam.sand.env$tide, distance = "bray", permutations = 9999)
+
+# betadispersion 
+# habitat
+dis <- vegdist(fam.abund.hel)
+group <- fam.sites$habitat
+bd <- betadisper(dis, group)
+anova(bd)
+```
+
+```{r family.sgd.ellipse}
+
+
+fam.reef.SGD.ell <- data.frame() #sets up a data frame before running the function.
+fam.sand.SGD.ell <- data.frame()
+
+
+fam.reefell <- fam.sites %>% filter(habitat=="reef")
+fam.sandell <- fam.sites %>% filter(habitat=="sand")
+
+#--- fill data frames  --------------------
+for(g in levels(fam.reefell$SGD)){
+ fam.reef.SGD.ell <- rbind(fam.reef.SGD.ell, 
+                     cbind(as.data.frame(with(fam.reefell[fam.reefell$SGD==g,],
+                                              veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,SGD=g))
+}
+
+for(g in levels(fam.sandell$SGD)){
+ fam.sand.SGD.ell <- rbind(fam.sand.SGD.ell, 
+                     cbind(as.data.frame(with(fam.sandell[fam.sandell$SGD==g,],
+                                              veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,SGD=g))
+}
+
+
+#--- plot ellipses --------------------
+fam.ell.plot <- ggplot() + 
+  geom_point(data = fam.sites,
+             mapping = aes(x=NMDS1, 
+                           y = NMDS2, 
+                           shape = factor(SGD),
+                           colour = factor(location_group), 
+                           fill = factor(tide),
+                           stroke = 1.5,)) + 
+  scale_shape_manual(values = c(21, 24)) + 
+  scale_fill_manual(values = c("black", 
+                               "white")) +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  theme_bw() +
+  labs(x = "NMDS1", 
+       colour = "Site", 
+       y = "NMDS2", 
+       shape = "SGD",
+       fill = "Tide") +
+  geom_path(data = fam.reef.SGD.ell, 
+            aes(x = NMDS1, 
+                y = NMDS2, 
+                group = SGD)) +
+  geom_path(data = fam.sand.SGD.ell,
+            aes(x=NMDS1,
+                y=NMDS2,
+                group=SGD)) +
+  ggtitle("SGD drives variance in sand habitats")
+  
+        
+fam.ell.plot
+```
+
+### Broad divesity stats 
+Species richness is higher in reefs than sand habitats (3 way ANOVA, F = 17.883, p = .006)
+```{r species richness}
+
+richness <- all.cam %>%
+  # choose only presence absence
+  filter(activity == "nat") %>%
+  # group down to individual videos
+  group_by(habitat, SGD, tide, site, rep) %>%
+  # choose only unique species
+  distinct(common) %>%
+  # turn presence/absence into 1s and 0s
+  mutate(present = 1) %>%
+  # spread presence values into nmds format
+  spread(key = common, value = present, fill = 0) %>%
+  ungroup() %>%
+  # sum total number of species present
+  mutate(richness = rowSums(across(6:57))) %>%
+  dplyr::select(habitat, SGD, tide, site, rep, richness)
+
+
+rich.aov <- aov(richness~habitat*SGD*tide, data = richness)
+
+richness.plot <- richness %>%
+  group_by(habitat, SGD, tide) %>%
+  summarise(mean = mean(richness),
+            sd = sd(richness)) %>%
+  ggplot(aes(x = as.factor(SGD), 
+             y = mean,
+             group = tide)) +
+  geom_bar(aes(fill = tide, group = tide), 
+           position = "dodge", 
+           stat = "identity",
+           width = .5) +
+  geom_errorbar(aes(x=SGD, ymin=mean-sd, ymax=mean+sd), stat = "identity", position = position_dodge(.5), width= .1)+
+  facet_wrap(~habitat) +
+  theme_bw() +
+  ylab("Average species richness") +
+  xlab("Groundwater influence") +
+  ggtitle("SGD increases reef fish species richness")
+
+richness.plot
+
+
+```
+
+```{r shannon species diversity}
+
+div <- as.tibble(diversity(abundance.species.matrix, "shannon" )) %>%
+  mutate(div = value)
+
+shan <-  bind_cols(abund.env, div) %>%
+  dplyr::select(habitat, SGD, tide, site, rep, div) %>%
+  group_by(habitat, SGD, tide) %>%
+  summarise(mean_div = mean(div),
+            sd = sd(div))  %>%
+  ggplot(aes(x = SGD, 
+             y = mean_div)) +
+  geom_bar(aes(fill = tide), 
+           position = "dodge", 
+           stat = "identity") +
+  geom_errorbar( aes(x=SGD, ymin=mean_div-sd, ymax=mean_div+sd), position = "dodge")+
+  facet_wrap(~habitat) +
+  theme_bw() +
+  ylab("Average shannon") +
+  xlab("Groundwater influence") +
+  ggtitle("Average Species Richness ")
+```
+
+
+## What are they doing? Feeding analysis
+### Tide and groundwater significantly affect bite rates on different substrate types 
+
+Significant three way SGD:tide:substrate interaction.
+```{r reef.substrate, eval = TRUE}
+reef.rates <- all.cam %>%
+  # choose only feeding observations
+  filter(activity == "feed",
+         # choose only reef habitats
+         habitat == "reef") %>%
+   mutate(substrate = fct_recode(substrate,"Benthos" = "MPbenthos",
+                                "Benthos"= "Coral",
+                                "Benthos"="macroalgae")) %>%
+  # clean up dataframe
+  select(SGD, tide, site, rep, common, nmax, substrate, number_bites) %>%
+  group_by(SGD, tide, site, rep, common, nmax, substrate) %>%
+  summarise(sum_bites = sum(number_bites)) %>%
+  group_by(SGD, tide, site, rep, substrate) %>%
+  summarise(bites_sum = sum(sum_bites),
+            nmax = sum(nmax)) %>%
+  mutate(bites_ind = bites_sum/nmax/10) %>%
+  drop_na()
+
+
+reef.aov <- aov(bites_sum~SGD*tide*substrate, data = reef.rates)
+summary(reef.aov)
+
+
+  reef.rates.plot <- reef.rates %>%
+  group_by(SGD, tide, substrate) %>%
+  summarise(mean_bites = mean(bites_ind),
+            sd = sd(bites_ind)) %>%
+  ggplot(aes(x = SGD, 
+             y = mean_bites,
+             group = tide)) +
+  geom_bar(aes(fill = tide), 
+           position = "dodge", 
+           stat = "identity",
+           width = .5) +
+  geom_errorbar(aes(x=SGD, ymin=mean_bites-sd, ymax=mean_bites+sd), stat = "identity", position = position_dodge(.5), width= .1) +
+  facet_wrap(~substrate, ncol = 2) +
+  theme_bw() +
+  ylab("Average bites per individual per minute") +
+  xlab("Groundwater influence") +
+  ggtitle("The average bites on different substrate types within reef habitats. ")
+
+reef.rates.plot
+
+```  
+
+```{r sand.substrate, eval = TRUE}
+sand.rates <- all.cam %>%
+  # choose only feeding observations
+  filter(activity == "feed",
+         # choose only reef habitats
+         habitat == "sand") %>%
+   mutate(substrate = fct_recode(substrate, "Benthos"= "sand",
+                                "Benthos"="macroalgae")) %>%
+  # clean up dataframe
+  select(SGD, tide, site, rep, common, nmax, substrate, number_bites) %>%
+  group_by(SGD, tide, site, rep, common, nmax, substrate) %>%
+  summarise(sum_bites = sum(number_bites)) %>%
+  group_by(SGD, tide, site, rep, substrate) %>%
+  summarise(bites_sum = sum(sum_bites),
+            nmax = sum(nmax)) %>%
+  mutate(bites_ind = bites_sum/nmax/10) %>%
+  drop_na() %>%
+  select(SGD, tide, site, rep, substrate, bites_ind) %>%
+  spread(substrate, bites_ind, fill = 0) %>%
+  gather(substrate, bites, 5:6)
+
+
+sand.aov <- aov(bites~SGD*tide*substrate, data = sand.rates)
+summary(sand.aov)
+
+
+  sand.rates.plot <- sand.rates %>%
+  group_by(SGD, tide, substrate) %>%
+  summarise(mean_bites = mean(bites),
+            sd = sd(bites)) %>%
+  ggplot(aes(x = SGD, 
+             y = mean_bites,
+             group = tide)) +
+  geom_bar(aes(fill = tide), 
+           position = "dodge", 
+           stat = "identity",
+           width = .5) +
+  geom_errorbar(aes(x=SGD, ymin=mean_bites-sd, ymax=mean_bites+sd), stat = "identity", position = position_dodge(.5), width= .1) +
+  facet_wrap(~substrate, ncol = 2) +
+  theme_bw() +
+  ylab("Average bites per individual per minute") +
+  xlab("Groundwater influence") +
+  ggtitle("The average bites on different substrate types within sand habitats. ")
+
+sand.rates.plot
+
+```
+No significant relationships because standard deviation too high. Slight SGD influence (p = .07)
+  
+
+## A diverse set of species feed on plankton in groundwater! 
+33 species that have observations feeding on plankton in high SGD regions at low tide  
+
+```{r sgd.diet}
+plankton <- all.cam %>%
+  filter(SGD == "High" ,
+         Tide == "Low Tide",
+         activity == "feed",
+         substrate == "Plankton") %>%
+  mutate(bites = (number_bites/nmax)/10)%>%
+  group_by(habitat, family, common) %>%
+  summarise(bites = mean(number_bites)) %>%
+  ungroup() %>%
+  ggplot(aes(x = bites,
+         y = reorder(common, +bites),
+         group = family)) +
+  geom_bar(aes(fill=family),
+           stat = "identity") +
+  facet_wrap(~habitat) +
+  theme_bw() +
+   xlab("Average bites per individual per minute in groundwater") +
+  ylab("")  +
+  ggtitle("")
+
+plankton
+
+plankton.trans <- all.cam %>%
+  filter(SGD == "High" ,
+         Tide == "Low Tide",
+         activity == "feed",
+         substrate == "Plankton") %>%
+  mutate(bites = (number_bites/nmax)/10)%>%
+  group_by(habitat, family, common) %>%
+  summarise(bites = mean(number_bites)) %>%
+  mutate(log.bites = log(bites+1)) %>%
+  ungroup() %>%
+  ggplot(aes(x = log.bites,
+         y = reorder(common, +log.bites),
+         group = family)) +
+  geom_bar(aes(fill=family),
+           stat = "identity") +
+  facet_wrap(~habitat) +
+  theme_bw() +
+   xlab("Average bites per individual per minute in groundwater (Log transformed ") +
+  ylab("")  +
+  ggtitle("Log-transformed bite data")
+
+plankton.trans
+
+```
+
+# Dietary Plasticity 
+
+```{r diet.switch}
+reef.switch <- all.cam %>%
+  # choose only feeding observations
+  filter(activity == "feed",
+         # choose only reef habitats
+         habitat == "reef") %>%
+   mutate(substrate = fct_recode(substrate,"Benthos" = "MPbenthos",
+                                "Benthos"= "Coral",
+                                "Benthos"="macroalgae")) %>%
+   mutate(SGD = fct_recode(SGD,"Lots of Groundwater" = "High",
+                                "Less Groundwater"= "Low")) %>%
+  # clean up dataframe
+  select(SGD, tide, site, rep, family, common, nmax, substrate, number_bites) %>%
+  group_by(SGD, tide, site, rep, family, common, nmax, substrate) %>%
+  summarise(sum_bites = sum(number_bites)) %>%
+  group_by(SGD, tide, site, rep, family, substrate) %>%
+  summarise(bites_sum = sum(sum_bites),
+            nmax = sum(nmax)) %>%
+  mutate(bites_ind = bites_sum/nmax/10) %>%
+  group_by(SGD, tide, family, substrate) %>%
+  summarise(mean_bites = mean(bites_ind),
+            sd = sd(bites_ind)) %>%
+  na.omit() %>%
+  ggplot(aes(x = mean_bites,
+         y = reorder(family, +mean_bites))) +
+  geom_bar(aes(fill=substrate),
+           stat = "identity") +
+  facet_wrap(~ SGD+tide) +
+  theme_bw() +
+  xlab("Average bites per individual per minute") +
+  ylab("")
+
+reef.switch
+  
+```  
+
+
+
+![](/Users/maya/Documents/R_sessions/silbiger_lab/moorea_sgd/herbivory/images/ReefLowtide.png)
+
+![](/Users/maya/Documents/R_sessions/silbiger_lab/moorea_sgd/herbivory/images/ReefHightide.png)
+
+
+## Next Steps
+
+### Analyze two more days of footage  
+### Connect these results to herbivory choice experiment
+#### Higher rates of herbivory on reefs not necessarily due to differences in communities, more due to feeding rates. In sand habitats could be due to different communities. 
+
+
+
+

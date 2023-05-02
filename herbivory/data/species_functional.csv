@@ -1,0 +1,62 @@
+﻿common,family,genus,code,functional,notes
+Brown Surgeonfish,Acanthuridae,Acanthurus nigrofuscus,ACNI,Herbivore,
+Guineafowl Puffer,Tetraodontidae,Arothron meleagris,AMEL,Corallivore,
+Whitecheek Surgeonfish,Acanthuridae,Acanthurus nigricans,ANIG,Herbivore,Cropper
+Banded Sergeant,Pomacentridae,Abudefduf septemfasciatus,ASEP,Omnivore,
+Scissortial Sergeant,Pomacentridae,Abudefduf sexfasciatus,ASEX,Omnivore,primarily planktivore?
+Blackspot Sergeant,Pomacentridae,Abudefduf sordidus,ASOR,Omnivore,primarily planktivore?
+Convict Surgeonfish,Acanthuridae,Acanthurus triostegus ,ATRI,Herbivore,Cropper
+NA,NA,bigstripe_1,bigstripe_1,NA,
+Orange-lined Triggerfish,Balistidae,Balistapus undulatus,BUND,Omnivore,
+NA,NA,butter_1,butter_1,NA,
+Black-tip Reef Shark,Carcharhinidae,Carcharhinus melanopterus,CAME,Piscivore,
+Threadfin Butterflyfish,Chaetodontidae,Chaetodon auriga,CAUR,Corallivore,
+Twin Spot Wrasse,Labridae,Coris aygula,CAYG,Invertivore,
+Floral Wrasse,Labridae,Cheilinus chlorourus,CCHL,Invertivore,
+Speckled Butterflyfish,Chaetodontidae,Chaetodon citrinellus,CCIT,Corallivore,
+Fringelip mullet,Mugilidae,Crenimugil crenilabrus,CCRE,Omnivore,check
+Saddle Butterflyfish,Chaetodontidae,Chaetodon ephippium,CEPH,Corallivore,
+Lemonpeel Angelfish,Pomacanthidae,Centropyge flavissima,CFLA,Omnivore,
+Oval Butterflyfish,Chaetodontidae,Chaetodon lunulatus,CHLU,Corallivore,
+Cigar Wrasse,Labridae,Cheilio inermis,CINE,Invertivore,
+Surge Damselfish,Pomacentridae,Chrysiptera leucopoma,CLEU,Omnivore,
+Raccoon Butterflyfish,Chaetodontidae,Chaetodon lunula,CLUN,Corallivore,
+Bluefin Trevally,Carangidae,Caranx melampygus,CMEL,Piscivore,
+Network Pipefish,Syngnathidae,Corythoicthys flavofasciatus,CORY,Invertivore,
+NA,NA,cryptic_1,cryptic_1,NA,
+Bullethead Parrotfish,Scaridae,Chlorurus spilurus,CSPI,Herbivore,Excavator
+Double-saddle Butterflyish,Chaetodontidae,Chaetodon ulietensis,CULI,Corallivore,
+Vagabond Butterflyfish,Chaetodontidae,Chaetodon vagabundus,CVAG,Corallivore,
+Blue-green Chromis,Pomacentridae,Chromis viridis,CVIR,Omnivore,
+Whitetail Dascyllus,Pomacentridae,Dascyllus aruanus,DARU,Omnivore,Planktivore
+Honeycomb Grouper,Serranidae,Epinephelus merra,EMER,Piscivore,
+Squaretail Mullet,Mugilidae,Ellochelon vaigiensis,EVAI,Omnivore,
+Eye-bar Goby,Oxudercidae,Gnatholepis anjerensis,GANJ,Invertivore,
+Bird Wrasse,Labridae,Gomphosus varius,GVAR,Invertivore,
+Checkerboard Wrasse,Labridae,Halichoeres hortulanus,HHOR,Invertivore,
+Whiptail Stingray,Dasyatidae,Himantura fai,HFAI,Invertivore,
+Longnose Parrotfish,Scaridae,Hipposcarus longiceps,HLON,Herbivore,Primary consumer / scraper
+Threespot Wrasse,Labridae,Halichoeres trimaculatus,HTRI,Invertivore,
+Barred flagtail,Kuhliidae,Kuhlia mugil,KMUG,Omnivore,
+Blacktail Snapper,Lutjanidae,Lutjanus fulvus,LFUL,Invertivore,
+Onespot Snapper,Lutjanidae,Lutjanus monostigma,LMON,Invertivore,
+Yellowstripe Goatfish,Mullidae,Mulloidichthys flavolineatus,MFLA,Invertivore,
+Yellowfin Goatfish,Mullidae,Muloidicthys vanicolensis,MVAN,Invertivore,
+Needlefish,Beloniformes,needlefish,needlefish,Piscivore,
+Yellow Boxfish,Ostraciidae,Ostracion cubicus,OCUB,Omnivore,
+Parrotfish_1,Scaridae,parrot_1,parrot_1,Herbivore,
+Parrotfish_1,Scaridae,parrotfish_1,parrotfish_1,Herbivore,
+Parrotfish_2,Scaridae,parrotfish_2,parrotfish_2,Herbivore,
+Manybar Goatfish,Mullidae,Parupeneus multifasciatus,PMUL,Invertivore,
+Saphire Damsel,Pomacentridae,Pomacentrus pavo,PPAV,Omnivore,
+Lagoon Triggerfish,Balistidae,Rhinecanthus aculeatus,RACU,Omnivore,
+Red-shoulder Wrasse,Labridae,Stethojulis bandanensis,SBAN,Invertivore,
+Dusky Damselfish,Pomacentridae,Stegastes nigricans,SNIG,Omnivore,
+Violet-lined parrotfish,Scaridae,Scarus globiceps,SGLO,Herbivore,
+Palenose Parrotfish,Scaridae,Scarus psittacus,SPSI,Herbivore,Primary consumer / scraper
+Spiny Rabbitfish,Siganidae,Siganus spinus,SSPI,Herbivore,Browser
+Sixbar Wrasse,Labridae,Thalossoma hardwicke,THAR,Invertivore,
+NA,NA,tiny_1,tiny_1,NA,
+NA,Balistidae,triggerfish_2,triggerfish_2,NA,
+Moorish Idol,Zanclidae,zanclus cornutus,ZCOR,Omnivore,
+Brown Tang,Acanthuridae,Zebrasoma scopas,ZSCO,Herbivore,concealed cropper

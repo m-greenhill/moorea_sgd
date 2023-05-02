@@ -1,0 +1,13 @@
+﻿Habitat,SGD,Site_ID,weight_mg,ug_N,del15N,ug_C,del13C
+Sand,High,SandSGD_1,2.70,34.1,7.5,787.6,-12.7
+Sand,High,SandSGD_2,2.48,25.4,4.9,736.0,-11.3
+Sand,High,Sand_SGD_3,2.63,32.6,7.2,734.1,-12.8
+Sand,Low,Sand_AMB_1,2.41,20.6,4.4,672.1,-10.6
+Sand,Low,Sand_AMB_2,2.56,25.1,4.5,761.7,-11.6
+Sand,Low,Sand_AMB_3,2.68,21.7,4.1,742.1,-8.9
+Reef,High,Reef_SGD_1,2.60,25.9,4.3,795.9,-10.8
+Reef,High,Reef_SGD_2,2.62,30.3,4.4,769.9,-10.3
+Reef,High,Reef_SGD_3,2.38,28.6,5.3,717.6,-12.0
+Reef,Low,Reef_AMB_1,2.48,23.2,4.1,729.5,-10.0
+Reef,Low,Reef_AMB_2,2.72,26.4,4.2,837.1,-10.4
+Reef,Low,Reef_AMB_3,2.48,21.5,4.2,739.9,-10.3
